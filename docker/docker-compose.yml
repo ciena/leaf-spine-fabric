@@ -1,0 +1,74 @@
+# Copyright 2015 Ciena and others
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+leaf_spine_fabric:
+  image: ciena/mininet
+  container_name: leaf_spine_fabric
+  privileged: true
+  stdin_open: true
+  tty: true
+  environment:
+    MININET_SCRIPT: https://raw.githubusercontent.com/ciena/mininet-topos/docker/spine_leaf.py
+    MININET_SCRIPT_OPTIONS: -l 4 -s 2 -c primary_controller
+  links:
+    - fabric_controller_1:primary_controller
+    - fabric_controller_2:backup_controller1
+    - fabric_controller_3:backup_controller2
+  labels:
+    org.onlabs.cord.name: leaf-spine-fabric
+    org.onlabs.cord.type: fabric
+    org.onlabs.cord.domain: leaf-spine-fabric
+
+fabric_controller_1:
+  image: ciena/onos
+  container_name: fabric_controller_1
+  environment:
+    ONOS_APPS: openflow
+  labels:
+      org.onlabs.cord.name: fabric-controller-1
+      org.onlabs.cord.type: controller
+      org.onlabs.cord.domain: leaf-spine-fabric
+  restart: on-failure:5
+
+fabric_controller_2:
+  image: ciena/onos
+  container_name: fabric_controller_2
+  labels:
+      org.onlabs.cord.name: fabric-controller-2
+      org.onlabs.cord.type: controller
+      org.onlabs.cord.domain: leaf-spine-fabric
+  restart: on-failure:5
+
+fabric_controller_3:
+  image: ciena/onos
+  container_name: fabric_controller_3
+  labels:
+      org.onlabs.cord.name: fabric-controller-3
+      org.onlabs.cord.type: controller
+      org.onlabs.cord.domain: leaf-spine-fabric
+  restart: on-failure:5
+
+form_cluster:
+  image: ciena/onos-form-cluster
+  container_name: form_cluster
+  environment:
+    CLUSTER_HOSTS: fabric_controller_1,fabric_controller_2,fabric_controller_3
+  links:
+    - fabric_controller_1
+    - fabric_controller_2
+    - fabric_controller_3
+  labels:
+      org.onlabs.cord.name: onos-form-cluster
+      org.onlabs.cord.type: utility
+      org.onlabs.cord.domain: leaf-spine-fabric
+  restart: never
